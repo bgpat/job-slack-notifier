@@ -1,0 +1,9 @@
+apiVersion: jsn.k8s.bgpat.net/v1beta1
+kind: JobNotifier
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: jobnotifier-sample
+spec:
+  # Add fields here
+  foo: bar
