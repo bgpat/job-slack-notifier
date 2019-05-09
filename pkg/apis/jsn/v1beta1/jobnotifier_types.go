@@ -27,6 +27,7 @@ import (
 type JobNotifierSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Selector *metav1.LabelSelector `json:"selector,omitempty"`
 }
 
 // JobNotifierStatus defines the observed state of JobNotifier

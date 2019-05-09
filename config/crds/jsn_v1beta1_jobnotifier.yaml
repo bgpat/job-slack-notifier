@@ -10,8 +10,6 @@ spec:
   names:
     kind: JobNotifier
     plural: jobnotifiers
-    shortNames:
-    - jn
   scope: Namespaced
   validation:
     openAPIV3Schema:
@@ -29,6 +27,11 @@ spec:
         metadata:
           type: object
         spec:
+          properties:
+            selector:
+              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                Important: Run "make" to regenerate code after modifying this file'
+              type: object
           type: object
         status:
           type: object

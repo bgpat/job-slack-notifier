@@ -7,23 +7,31 @@ rules:
 - apiGroups:
   - apps
   resources:
-  - deployments
+  - pods
   verbs:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
 - apiGroups:
   - apps
   resources:
-  - deployments/status
+  - pods/status
   verbs:
   - get
-  - update
-  - patch
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - batch
+  resources:
+  - jobs/status
+  verbs:
+  - get
 - apiGroups:
   - jsn.k8s.bgpat.net
   resources:
@@ -32,10 +40,6 @@ rules:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
 - apiGroups:
   - jsn.k8s.bgpat.net
   resources:
