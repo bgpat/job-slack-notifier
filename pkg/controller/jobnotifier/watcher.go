@@ -154,7 +154,7 @@ func (w *watcher) process(ev watch.Event) error {
 		}
 	}
 	for _, pod := range pods.Items {
-		if pod.Status.Phase != corev1.PodSucceeded && pod.Status.Phase != corev1.PodFailed {
+		if len(pod.Status.ContainerStatuses) <= 0 {
 			continue
 		}
 		terminated := true
@@ -192,6 +192,7 @@ func (w *watcher) sendPodLog(ts string, pod corev1.Pod) {
 	for _, ct := range containers {
 		req := k8sClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
 			Container: ct.Name,
+			TailLines: func(i int64) *int64 { return &i }(100),
 		})
 		stream, err := req.Stream()
 		if err != nil {
