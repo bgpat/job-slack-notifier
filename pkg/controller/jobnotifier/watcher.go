@@ -2,12 +2,14 @@ package jobnotifier
 
 import (
 	"fmt"
+	"io/ioutil"
 	"reflect"
 	"sync"
 
 	jsnv1beta1 "github.com/bgpat/job-slack-notifier/pkg/apis/jsn/v1beta1"
 	"github.com/bgpat/job-slack-notifier/pkg/notifier"
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
@@ -23,10 +25,15 @@ type watcher struct {
 var (
 	watchers   = map[types.UID]*watcher{}
 	watchersMu sync.RWMutex
+	podLogMu   = sync.Map{}
 
 	k8sClient *kubernetes.Clientset
 
-	msgTimestampKey = jsnv1beta1.SchemeGroupVersion.Group + "/message-timestamp"
+	msgTimestampKey    = jsnv1beta1.SchemeGroupVersion.Group + "/message-ts-"
+	podLogTimestampKey = jsnv1beta1.SchemeGroupVersion.Group + "/log-ts-"
+
+	// TODO: get channel ID from CRD
+	channel = "CJKV1EJ56"
 )
 
 func watchJob(notifier *jsnv1beta1.JobNotifier) error {
@@ -120,9 +127,8 @@ func (w *watcher) process(ev watch.Event) error {
 		)
 		return err
 	}
-	ts := job.GetAnnotations()[msgTimestampKey]
-	// TODO: get channel ID from CRD
-	newTs, unlock, err := notifier.Post("CJKV1EJ56", ts, ev.Type, job, pods.Items)
+	ts := job.GetAnnotations()[msgTimestampKey+channel]
+	newTS, unlock, err := notifier.Send(channel, ts, ev.Type, job, pods.Items)
 	if unlock != nil {
 		defer unlock()
 	}
@@ -130,13 +136,13 @@ func (w *watcher) process(ev watch.Event) error {
 		"process",
 		"type", ev.Type,
 		"status", job.Status,
-		"ts", newTs,
+		"ts", newTS,
 	)
 	if err != nil {
 		return err
 	}
-	if newTs != "" && newTs != ts {
-		metav1.SetMetaDataAnnotation(&job.ObjectMeta, msgTimestampKey, newTs)
+	if newTS != "" && newTS != ts {
+		metav1.SetMetaDataAnnotation(&job.ObjectMeta, msgTimestampKey+channel, newTS)
 		_, err := k8sClient.BatchV1().Jobs(w.notifier.Namespace).Update(job)
 		if err != nil {
 			log.Error(
@@ -147,5 +153,86 @@ func (w *watcher) process(ev watch.Event) error {
 			return err
 		}
 	}
+	for _, pod := range pods.Items {
+		if pod.Status.Phase != corev1.PodSucceeded && pod.Status.Phase != corev1.PodFailed {
+			continue
+		}
+		terminated := true
+		containers := make([]corev1.ContainerStatus, 0, len(pod.Status.InitContainerStatuses)+len(pod.Status.ContainerStatuses))
+		containers = append(containers, pod.Status.InitContainerStatuses...)
+		containers = append(containers, pod.Status.ContainerStatuses...)
+		for _, ct := range containers {
+			if ct.State.Terminated == nil {
+				terminated = false
+				break
+			}
+		}
+		if terminated {
+			go w.sendPodLog(newTS, pod)
+		}
+	}
 	return err
+}
+
+func (w *watcher) sendPodLog(ts string, pod corev1.Pod) {
+	v, _ := podLogMu.LoadOrStore(pod.UID, &sync.RWMutex{})
+	mu := v.(*sync.RWMutex)
+	mu.RLock()
+	skip := metav1.HasAnnotation(pod.ObjectMeta, podLogTimestampKey+channel)
+	mu.RUnlock()
+	if skip {
+		return
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	containers := make([]corev1.ContainerStatus, 0, len(pod.Status.InitContainerStatuses)+len(pod.Status.ContainerStatuses))
+	containers = append(containers, pod.Status.InitContainerStatuses...)
+	containers = append(containers, pod.Status.ContainerStatuses...)
+	logs := map[string]string{}
+	for _, ct := range containers {
+		req := k8sClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+			Container: ct.Name,
+		})
+		stream, err := req.Stream()
+		if err != nil {
+			log.Error(
+				err, "Could not get log stream",
+				"namespace", pod.Namespace,
+				"pod", pod.Name,
+				"container", ct.Name,
+			)
+			return
+		}
+		l, err := ioutil.ReadAll(stream)
+		if err != nil {
+			log.Error(
+				err, "Could not read log stream",
+				"namespace", pod.Namespace,
+				"pod", pod.Name,
+				"container", ct.Name,
+			)
+			return
+		}
+		logs[ct.Name] = string(l)
+	}
+	newTS, err := notifier.SendLogs(channel, ts, pod, logs)
+	if err != nil {
+		log.Error(
+			err, "Could not send the pod log",
+			"namespace", pod.Namespace,
+			"pod", pod.Name,
+		)
+		return
+	}
+	metav1.SetMetaDataAnnotation(&pod.ObjectMeta, podLogTimestampKey+channel, newTS)
+	_, err = k8sClient.CoreV1().Pods(pod.Namespace).Update(&pod)
+	if err != nil {
+		log.Error(
+			err, "Cloud not update Pod",
+			"namespace", pod.Namespace,
+			"pod", pod.Name,
+			"ts", newTS,
+		)
+		return
+	}
 }

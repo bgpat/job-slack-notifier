@@ -34,8 +34,8 @@ func SetToken(token string) {
 	client = slack.New(token)
 }
 
-// Post sends a message to the specified channel.
-func Post(channel, ts string, event watch.EventType, job *batchv1.Job, pods []corev1.Pod) (newTS string, unlock func(), err error) {
+// Send sends a message to the specified channel.
+func Send(channel, ts string, event watch.EventType, job *batchv1.Job, pods []corev1.Pod) (newTS string, unlock func(), err error) {
 	if ts == "" {
 		ts = getTS(channel, job.UID)
 	}
@@ -133,6 +133,24 @@ func Post(channel, ts string, event watch.EventType, job *batchv1.Job, pods []co
 	}
 	_, newTS, _, err = client.SendMessage(channel, options...)
 	return
+}
+
+// SendLogs sends the container log.
+func SendLogs(channel, ts string, pod corev1.Pod, logs map[string]string) (string, error) {
+	attachments := make([]slack.Attachment, 0, len(logs))
+	for ct, l := range logs {
+		attachments = append(attachments, slack.Attachment{
+			Title: ct,
+			Text:  l,
+		})
+	}
+	_, newTS, _, err := client.SendMessage(
+		channel,
+		slack.MsgOptionTS(ts),
+		slack.MsgOptionUsername(pod.Name),
+		slack.MsgOptionAttachments(attachments...),
+	)
+	return newTS, err
 }
 
 func getTS(channel string, uid types.UID) string {
