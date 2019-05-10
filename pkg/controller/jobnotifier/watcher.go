@@ -107,8 +107,22 @@ func (w *watcher) process(ev watch.Event) error {
 	if !ok {
 		return fmt.Errorf("Could not cast Job from %T", ev.Object)
 	}
-	ts := messageTimestampAnnotation(job)
-	newTs, unlock, err := notifier.Post("CJKV1EJ56", ts, ev.Type, job)
+	selector := metav1.FormatLabelSelector(job.Spec.Selector)
+	pods, err := k8sClient.CoreV1().Pods(job.Namespace).List(metav1.ListOptions{
+		LabelSelector: selector,
+	})
+	if err != nil {
+		log.Error(
+			err, "Cloud not get Pods",
+			"namespace", job.Namespace,
+			"name", job.Name,
+			"selector", selector,
+		)
+		return err
+	}
+	ts := job.GetAnnotations()[msgTimestampKey]
+	// TODO: get channel ID from CRD
+	newTs, unlock, err := notifier.Post("CJKV1EJ56", ts, ev.Type, job, pods.Items)
 	if unlock != nil {
 		defer unlock()
 	}
@@ -134,8 +148,4 @@ func (w *watcher) process(ev watch.Event) error {
 		}
 	}
 	return err
-}
-
-func messageTimestampAnnotation(obj metav1.Object) string {
-	return obj.GetAnnotations()[msgTimestampKey]
 }
