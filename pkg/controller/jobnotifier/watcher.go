@@ -43,6 +43,7 @@ func watchJob(notifier *jsnv1beta1.JobNotifier) error {
 	}
 	w = &watcher{
 		notifier: notifier,
+		stopCh:   make(chan struct{}),
 	}
 	watchersMu.Lock()
 	watchers[notifier.UID] = w
@@ -56,8 +57,8 @@ func (w *watcher) start() error {
 		LabelSelector: selector,
 	})
 	if err != nil {
-		log.Info(
-			"start worker",
+		log.Error(
+			err, "Cloud not get Job",
 			"namespace", w.notifier.Namespace,
 			"notifier", w.notifier.Name,
 			"selector", selector,
@@ -66,22 +67,32 @@ func (w *watcher) start() error {
 	}
 	w.Interface = i
 	log.Info(
-		"start worker",
+		"start watcher",
 		"namespace", w.notifier.Namespace,
 		"notifier", w.notifier.Name,
+		"selector", selector,
 	)
-	for {
-		select {
-		case <-w.stopCh:
-			i.Stop()
-			return nil
-		case ev := <-i.ResultChan():
-			w.process(ev)
+	go func() {
+		for {
+			select {
+			case <-w.stopCh:
+				i.Stop()
+				return
+			case ev := <-i.ResultChan():
+				w.process(ev)
+			}
 		}
-	}
+	}()
+	return nil
 }
 
 func (w *watcher) stop() {
+	log.Info(
+		"stop watcher",
+		"namespace", w.notifier.Namespace,
+		"notifier", w.notifier.Name,
+		"selector", metav1.FormatLabelSelector(w.notifier.Spec.Selector),
+	)
 	close(w.stopCh)
 	watchersMu.Lock()
 	delete(watchers, w.notifier.UID)
