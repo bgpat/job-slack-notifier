@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	jsnv1beta1 "github.com/bgpat/job-slack-notifier/pkg/apis/jsn/v1beta1"
+	"github.com/bgpat/job-slack-notifier/pkg/notifier"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -24,6 +25,8 @@ var (
 	watchersMu sync.RWMutex
 
 	k8sClient *kubernetes.Clientset
+
+	msgTimestampKey = jsnv1beta1.SchemeGroupVersion.Group + "/message-timestamp"
 )
 
 func watchJob(notifier *jsnv1beta1.JobNotifier) error {
@@ -104,10 +107,35 @@ func (w *watcher) process(ev watch.Event) error {
 	if !ok {
 		return fmt.Errorf("Could not cast Job from %T", ev.Object)
 	}
+	ts := messageTimestampAnnotation(job)
+	newTs, unlock, err := notifier.Post("CJKV1EJ56", ts, ev.Type, job)
+	if unlock != nil {
+		defer unlock()
+	}
 	log.Info(
 		"process",
 		"type", ev.Type,
 		"status", job.Status,
+		"ts", newTs,
 	)
-	return nil
+	if err != nil {
+		return err
+	}
+	if newTs != "" && newTs != ts {
+		metav1.SetMetaDataAnnotation(&job.ObjectMeta, msgTimestampKey, newTs)
+		_, err := k8sClient.BatchV1().Jobs(w.notifier.Namespace).Update(job)
+		if err != nil {
+			log.Error(
+				err, "Cloud not update Job",
+				"namespace", w.notifier.Namespace,
+				"notifier", w.notifier.Name,
+			)
+			return err
+		}
+	}
+	return err
+}
+
+func messageTimestampAnnotation(obj metav1.Object) string {
+	return obj.GetAnnotations()[msgTimestampKey]
 }

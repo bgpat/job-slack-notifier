@@ -22,6 +22,7 @@ import (
 
 	"github.com/bgpat/job-slack-notifier/pkg/apis"
 	"github.com/bgpat/job-slack-notifier/pkg/controller"
+	"github.com/bgpat/job-slack-notifier/pkg/notifier"
 	"github.com/bgpat/job-slack-notifier/pkg/webhook"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -31,11 +32,25 @@ import (
 )
 
 func main() {
-	var metricsAddr string
+	var (
+		metricsAddr string
+		slackToken  string
+	)
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&slackToken, "slack-token", "", "The API token for slack bot.")
 	flag.Parse()
+
 	logf.SetLogger(logf.ZapLogger(false))
 	log := logf.Log.WithName("entrypoint")
+
+	if slackToken == "" {
+		slackToken = os.Getenv("SLACK_TOKEN")
+	}
+	if slackToken == "" {
+		log.Error(nil, "-slack-token must be set")
+		os.Exit(1)
+	}
+	notifier.SetToken(slackToken)
 
 	// Get a config to talk to the apiserver
 	log.Info("setting up client for manager")
