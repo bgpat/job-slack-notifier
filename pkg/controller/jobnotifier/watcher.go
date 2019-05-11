@@ -19,6 +19,7 @@ import (
 type watcher struct {
 	watch.Interface
 	notifier *jsnv1beta1.JobNotifier
+	channels []string
 	stopCh   chan struct{}
 }
 
@@ -31,32 +32,35 @@ var (
 
 	msgTimestampKey    = jsnv1beta1.SchemeGroupVersion.Group + "/message-ts-"
 	podLogTimestampKey = jsnv1beta1.SchemeGroupVersion.Group + "/log-ts-"
-
-	// TODO: get channel ID from CRD
-	channel = "CJKV1EJ56"
 )
 
-func watchJob(notifier *jsnv1beta1.JobNotifier) error {
+func watchJob(n *jsnv1beta1.JobNotifier) error {
 	watchersMu.RLock()
-	w, exist := watchers[notifier.UID]
+	w, exist := watchers[n.UID]
 	watchersMu.RUnlock()
 	if exist {
-		if reflect.DeepEqual(w.notifier, notifier) {
+		if reflect.DeepEqual(w.notifier, n) {
 			log.Info(
 				"Not changed",
-				"namespace", notifier.Namespace,
-				"name", notifier.Name,
+				"namespace", n.Namespace,
+				"name", n.Name,
 			)
 			return nil
 		}
 		w.stop()
 	}
+	channels, err := notifier.GetChannelIDs(n.Spec.Channels)
+	if err != nil {
+		log.Error(err, "Could not get channel ID from channel name", "names", n.Spec.Channels)
+		return err
+	}
 	w = &watcher{
-		notifier: notifier,
+		notifier: n,
+		channels: channels,
 		stopCh:   make(chan struct{}),
 	}
 	watchersMu.Lock()
-	watchers[notifier.UID] = w
+	watchers[n.UID] = w
 	watchersMu.Unlock()
 	return w.start()
 }
@@ -127,54 +131,56 @@ func (w *watcher) process(ev watch.Event) error {
 		)
 		return err
 	}
-	ts := job.GetAnnotations()[msgTimestampKey+channel]
-	newTS, unlock, err := notifier.Send(channel, ts, ev.Type, job, pods.Items)
-	if unlock != nil {
-		defer unlock()
-	}
-	log.Info(
-		"process",
-		"type", ev.Type,
-		"status", job.Status,
-		"ts", newTS,
-	)
-	if err != nil {
-		return err
-	}
-	if newTS != "" && newTS != ts {
-		metav1.SetMetaDataAnnotation(&job.ObjectMeta, msgTimestampKey+channel, newTS)
-		_, err := k8sClient.BatchV1().Jobs(w.notifier.Namespace).Update(job)
+	for _, channel := range w.channels {
+		ts := job.GetAnnotations()[msgTimestampKey+channel]
+		newTS, unlock, err := notifier.Send(channel, ts, ev.Type, job, pods.Items)
+		if unlock != nil {
+			defer unlock()
+		}
+		log.Info(
+			"process",
+			"type", ev.Type,
+			"status", job.Status,
+			"ts", newTS,
+		)
 		if err != nil {
-			log.Error(
-				err, "Cloud not update Job",
-				"namespace", w.notifier.Namespace,
-				"notifier", w.notifier.Name,
-			)
 			return err
 		}
-	}
-	for _, pod := range pods.Items {
-		if len(pod.Status.ContainerStatuses) <= 0 {
-			continue
-		}
-		terminated := true
-		containers := make([]corev1.ContainerStatus, 0, len(pod.Status.InitContainerStatuses)+len(pod.Status.ContainerStatuses))
-		containers = append(containers, pod.Status.InitContainerStatuses...)
-		containers = append(containers, pod.Status.ContainerStatuses...)
-		for _, ct := range containers {
-			if ct.State.Terminated == nil {
-				terminated = false
-				break
+		if newTS != "" && newTS != ts {
+			metav1.SetMetaDataAnnotation(&job.ObjectMeta, msgTimestampKey+channel, newTS)
+			_, err := k8sClient.BatchV1().Jobs(w.notifier.Namespace).Update(job)
+			if err != nil {
+				log.Error(
+					err, "Cloud not update Job",
+					"namespace", w.notifier.Namespace,
+					"notifier", w.notifier.Name,
+				)
+				return err
 			}
 		}
-		if terminated {
-			go w.sendPodLog(newTS, pod)
+		for _, pod := range pods.Items {
+			if len(pod.Status.ContainerStatuses) <= 0 {
+				continue
+			}
+			terminated := true
+			containers := make([]corev1.ContainerStatus, 0, len(pod.Status.InitContainerStatuses)+len(pod.Status.ContainerStatuses))
+			containers = append(containers, pod.Status.InitContainerStatuses...)
+			containers = append(containers, pod.Status.ContainerStatuses...)
+			for _, ct := range containers {
+				if ct.State.Terminated == nil {
+					terminated = false
+					break
+				}
+			}
+			if terminated {
+				go w.sendPodLog(channel, newTS, pod)
+			}
 		}
 	}
 	return err
 }
 
-func (w *watcher) sendPodLog(ts string, pod corev1.Pod) {
+func (w *watcher) sendPodLog(channel, ts string, pod corev1.Pod) {
 	v, _ := podLogMu.LoadOrStore(pod.UID, &sync.RWMutex{})
 	mu := v.(*sync.RWMutex)
 	mu.RLock()

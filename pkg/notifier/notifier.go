@@ -179,3 +179,21 @@ func setTS(channel string, uid types.UID) func(string) {
 		mu.Unlock()
 	}
 }
+
+// GetChannelIDs returns the list of channel ID from given channel name or ID.
+func GetChannelIDs(names []string) ([]string, error) {
+	channels, err := client.GetChannels(true, slack.GetChannelsOptionExcludeMembers())
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(channels))
+	for _, ch := range channels {
+		for _, name := range names {
+			if ch.Name == name || ch.ID == name {
+				ids = append(ids, ch.ID)
+				break
+			}
+		}
+	}
+	return ids, nil
+}
