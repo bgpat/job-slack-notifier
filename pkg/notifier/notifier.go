@@ -35,7 +35,7 @@ func SetToken(token string) {
 }
 
 // Send sends a message to the specified channel.
-func Send(channel, ts string, event watch.EventType, job *batchv1.Job, pods []corev1.Pod) (newTS string, unlock func(), err error) {
+func Send(channel, ts, customMsg string, event watch.EventType, job *batchv1.Job, pods []corev1.Pod) (newTS string, unlock func(), err error) {
 	if ts == "" {
 		ts = getTS(channel, job.UID)
 	}
@@ -125,7 +125,8 @@ func Send(channel, ts string, event watch.EventType, job *batchv1.Job, pods []co
 			),
 			startTime,
 			completionTime,
-		}, "\n"), true),
+			customMsg,
+		}, "\n"), false),
 		slack.MsgOptionAttachments(attachments...),
 	}
 	if ts != "" {
@@ -191,6 +192,24 @@ func GetChannelIDs(names []string) ([]string, error) {
 		for _, name := range names {
 			if ch.Name == name || ch.ID == name {
 				ids = append(ids, ch.ID)
+				break
+			}
+		}
+	}
+	return ids, nil
+}
+
+// GetUserIDs returns the list of user ID from given user name.
+func GetUserIDs(names []string) ([]string, error) {
+	users, err := client.GetUsers()
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(users))
+	for _, u := range users {
+		for _, name := range names {
+			if u.Profile.DisplayName == name {
+				ids = append(ids, u.ID)
 				break
 			}
 		}

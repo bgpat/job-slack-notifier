@@ -30,6 +30,9 @@ type JobNotifierSpec struct {
 
 	// Specifies the channel list to send the notification.
 	Channels []string `json:"channels,omitempty"`
+
+	// Specifies the mentioned user for the notification.
+	MentionTo []string `json:"mention_to,omitempty"`
 }
 
 // JobNotifierStatus defines the observed state of JobNotifier

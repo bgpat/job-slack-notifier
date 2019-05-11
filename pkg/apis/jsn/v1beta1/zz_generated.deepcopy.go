@@ -98,6 +98,11 @@ func (in *JobNotifierSpec) DeepCopyInto(out *JobNotifierSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.MentionTo != nil {
+		in, out := &in.MentionTo, &out.MentionTo
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"reflect"
+	"strings"
 	"sync"
 
 	jsnv1beta1 "github.com/bgpat/job-slack-notifier/pkg/apis/jsn/v1beta1"
@@ -131,9 +132,29 @@ func (w *watcher) process(ev watch.Event) error {
 		)
 		return err
 	}
+	userIDs, err := notifier.GetUserIDs(w.notifier.Spec.MentionTo)
+	if err != nil {
+		log.Error(
+			err, "Cloud not get slack user ids",
+			"namespace", job.Namespace,
+			"name", job.Name,
+			"mention_to", w.notifier.Spec.MentionTo,
+		)
+		return err
+	}
+	users := make([]string, 0, len(userIDs))
+	for _, id := range userIDs {
+		users = append(users, fmt.Sprintf("<@%s>", id))
+	}
+	for _, name := range w.notifier.Spec.MentionTo {
+		if name == "channel" || name == "here" || name == "everyone" {
+			users = append(users, fmt.Sprintf("<!%s>", name))
+		}
+	}
+	msg := strings.Join(users, " ")
 	for _, channel := range w.channels {
 		ts := job.GetAnnotations()[msgTimestampKey+channel]
-		newTS, unlock, err := notifier.Send(channel, ts, ev.Type, job, pods.Items)
+		newTS, unlock, err := notifier.Send(channel, ts, msg, ev.Type, job, pods.Items)
 		if unlock != nil {
 			defer unlock()
 		}

@@ -10,3 +10,6 @@ spec:
       role: job
   channels:
   - random
+  mention_to:
+  - bgpat
+  - here
