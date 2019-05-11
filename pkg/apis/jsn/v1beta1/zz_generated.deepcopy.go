@@ -93,6 +93,11 @@ func (in *JobNotifierSpec) DeepCopyInto(out *JobNotifierSpec) {
 		*out = new(v1.LabelSelector)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Channels != nil {
+		in, out := &in.Channels, &out.Channels
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

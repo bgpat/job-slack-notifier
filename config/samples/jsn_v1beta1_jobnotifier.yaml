@@ -8,3 +8,6 @@ spec:
   selector:
     matchLabels:
       role: job
+  channels:
+  - jobtest
+  - random

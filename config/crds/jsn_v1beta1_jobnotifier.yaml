@@ -28,9 +28,13 @@ spec:
           type: object
         spec:
           properties:
+            channels:
+              description: Specifies the channel list to send the notification.
+              items:
+                type: string
+              type: array
             selector:
-              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                Important: Run "make" to regenerate code after modifying this file'
+              description: A label query to watch job status changes.
               type: object
           type: object
         status:

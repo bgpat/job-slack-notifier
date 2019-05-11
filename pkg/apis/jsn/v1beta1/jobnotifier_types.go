@@ -25,9 +25,11 @@ import (
 
 // JobNotifierSpec defines the desired state of JobNotifier
 type JobNotifierSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// A label query to watch job status changes.
 	Selector *metav1.LabelSelector `json:"selector,omitempty"`
+
+	// Specifies the channel list to send the notification.
+	Channels []string `json:"channels,omitempty"`
 }
 
 // JobNotifierStatus defines the observed state of JobNotifier
