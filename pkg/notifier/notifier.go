@@ -24,8 +24,8 @@ var (
 	}{
 		corev1.PodPending:   {color: "#FEE233", icon: "hourglass_flowing_sand"},
 		corev1.PodRunning:   {color: "#66C0EA", icon: "arrow_right"},
-		corev1.PodSucceeded: {color: "#84B74C", icon: "heavy_check_mark"},
-		corev1.PodFailed:    {color: "#F76934", icon: "heavy_multiplication_x"},
+		corev1.PodSucceeded: {color: "#84B74C", icon: "white_check_mark"},
+		corev1.PodFailed:    {color: "#F76934", icon: "x"},
 	}
 )
 
@@ -117,7 +117,7 @@ func Send(channel, ts string, event watch.EventType, job *batchv1.Job, pods []co
 		slack.MsgOptionUsername(fmt.Sprintf("%s/%s", job.Namespace, job.Name)),
 		slack.MsgOptionText(strings.Join([]string{
 			fmt.Sprintf(
-				":arrow_right: *active* %d\t\t:heavy_check_mark: *succeeded* %d\t\t:heavy_multiplication_x: *failed* %d%s",
+				":arrow_right: *active* %d\t\t:white_check_mark: *succeeded* %d\t\t:x: *failed* %d%s",
 				job.Status.Active,
 				job.Status.Succeeded,
 				job.Status.Failed,
