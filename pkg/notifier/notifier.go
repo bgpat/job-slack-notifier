@@ -36,12 +36,27 @@ func SetToken(token string) {
 
 // Send sends a message to the specified channel.
 func Send(channel, ts, customMsg string, event watch.EventType, job *batchv1.Job, pods []corev1.Pod) (newTS string, unlock func(), err error) {
+	attachments := make([]slack.Attachment, 0, len(pods))
 	if ts == "" {
 		ts = getTS(channel, job.UID)
 	}
 	if ts == "" {
 		unlock = func() {
 			setTS(channel, job.UID)(newTS)
+		}
+	} else {
+		messages, _, _, err := client.GetConversationReplies(&slack.GetConversationRepliesParameters{
+			ChannelID: channel,
+			Timestamp: ts,
+		})
+		if err != nil {
+			return "", nil, err
+		}
+		for _, msg := range messages {
+			if msg.Timestamp == ts {
+				attachments = msg.Attachments
+				break
+			}
 		}
 	}
 
@@ -55,7 +70,6 @@ func Send(channel, ts, customMsg string, event watch.EventType, job *batchv1.Job
 	if event == watch.Deleted {
 		deleted = "\t\t:boom: *deleted*"
 	}
-	attachments := make([]slack.Attachment, 0, len(pods))
 	for _, pod := range pods {
 		text := []string{fmt.Sprintf(":%s: %s", podStatuses[pod.Status.Phase].icon, string(pod.Status.Phase))}
 		if pod.Status.Message != "" {
@@ -85,7 +99,7 @@ func Send(channel, ts, customMsg string, event watch.EventType, job *batchv1.Job
 				))
 			case ct.State.Terminated != nil:
 				statuses = []string{
-					fmt.Sprintf(":clock9: *started at*\t\t%v", ct.State.Terminated.StartedAt),
+					fmt.Sprintf(":clock9: *started at*\t\t  %v", ct.State.Terminated.StartedAt),
 					fmt.Sprintf(":clock5: *finished at*\t\t%v", ct.State.Terminated.FinishedAt),
 					fmt.Sprintf(
 						"*exit code* %d\t\t*signal* %d",
@@ -105,13 +119,24 @@ func Send(channel, ts, customMsg string, event watch.EventType, job *batchv1.Job
 				Value: strings.Join(statuses, "\n"),
 			})
 		}
-		attachments = append(attachments, slack.Attachment{
+		attachment := slack.Attachment{
 			Color:  podStatuses[pod.Status.Phase].color,
 			Title:  pod.Name,
 			Text:   strings.Join(text, "\n"),
 			Fields: fields,
 			Footer: fmt.Sprintf("%v", pod.Status.StartTime),
-		})
+		}
+		exist := false
+		for i, a := range attachments {
+			if a.Title == attachment.Title {
+				attachments[i] = attachment
+				exist = true
+				break
+			}
+		}
+		if !exist {
+			attachments = append(attachments, attachment)
+		}
 	}
 	options := []slack.MsgOption{
 		slack.MsgOptionUsername(fmt.Sprintf("%s/%s", job.Namespace, job.Name)),
