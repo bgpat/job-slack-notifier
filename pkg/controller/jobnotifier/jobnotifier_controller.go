@@ -84,64 +84,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		}
 		return nil
 	}))
-
-	/*
-		mgr.Add(manager.RunnableFunc(func(stop <-chan struct{}) error {
-			config := mgr.GetConfig()
-			client, err := kubernetes.NewForConfig(config)
-			if err != nil {
-				return err
-			}
-			watcher, err := client.CoreV1().Pods("").Watch(metav1.ListOptions{})
-			if err != nil {
-				return err
-			}
-			log.Info("start worker")
-			for {
-				select {
-				case <-stop:
-					return nil
-				case ev := <-watcher.ResultChan():
-					pod, ok := ev.Object.(*corev1.Pod)
-					if !ok {
-						return err
-					}
-					ref := metav1.GetControllerOf(pod)
-					if ref == nil {
-						continue
-					}
-					refGV, err := schema.ParseGroupVersion(ref.APIVersion)
-					if err != nil {
-						log.Error(err, "Cloud not parse OwnerReference APIVersion")
-						continue
-					}
-					if ref.Kind == "Job" && refGV.Group == batchv1.GroupName {
-						job, err := client.BatchV1().Jobs(pod.GetNamespace()).Get(ref.Name, metav1.GetOptions{})
-						if err != nil {
-							log.Error(err, "Coult not get job", "ref", ref)
-							continue
-						}
-						cj := metav1.GetControllerOf(job)
-						switch ev.Type {
-						case watch.Modified:
-							log.Info(
-								"watch modified",
-								"namespace", pod.GetNamespace(),
-								"pod", pod.Name,
-								"job", job.Name,
-								"cronJob", cj.Name,
-								"phase", pod.Status.Phase,
-								"jobStatus", job.Status,
-							)
-						default:
-							//log.Info("watch", "event", ev)
-						}
-					}
-				}
-			}
-		}))
-	*/
-
 	return nil
 }
 
@@ -156,8 +98,8 @@ type ReconcileJobNotifier struct {
 // Reconcile reads that state of the cluster for a JobNotifier object and makes changes based on the state read
 // and what is in the JobNotifier.Spec
 // Automatically generate RBAC rules to allow the Controller to read and write Deployments
-// +kubebuilder:rbac:groups=apps,resources=pods,verbs=get;list;watch
-// +kubebuilder:rbac:groups=apps,resources=pods/status,verbs=get
+// +kubebuilder:rbac:groups=,resources=pods,verbs=get;list;watch
+// +kubebuilder:rbac:groups=,resources=pods/status,verbs=get
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch
 // +kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get
 // +kubebuilder:rbac:groups=jsn.k8s.bgpat.net,resources=jobnotifiers,verbs=get;list;watch
