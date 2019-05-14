@@ -18,7 +18,10 @@ COPY cmd/    cmd/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager github.com/bgpat/job-slack-notifier/cmd/manager
 
 # Copy the controller-manager into a thin image
-FROM ubuntu:latest
+FROM debian:buster-slim
+RUN apt-get update && apt-get install -y ca-certificates \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 WORKDIR /
 COPY --from=builder /go/src/github.com/bgpat/job-slack-notifier/manager .
 ENTRYPOINT ["/manager"]
