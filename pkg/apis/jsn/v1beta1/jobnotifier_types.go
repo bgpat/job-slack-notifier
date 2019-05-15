@@ -33,6 +33,10 @@ type JobNotifierSpec struct {
 
 	// Specifies the mentioned user for the notification.
 	MentionTo []string `json:"mention_to,omitempty"`
+
+	// Specifies the minimum failed count threshold.
+	// If it is less then job failed count, skip to notify.
+	MinFails int32 `json:"min_fails,omitempty"`
 }
 
 // JobNotifierStatus defines the observed state of JobNotifier
