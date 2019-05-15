@@ -19,6 +19,12 @@ rules:
   verbs:
   - get
 - apiGroups:
+  - ""
+  resources:
+  - pods/log
+  verbs:
+  - get
+- apiGroups:
   - batch
   resources:
   - jobs
