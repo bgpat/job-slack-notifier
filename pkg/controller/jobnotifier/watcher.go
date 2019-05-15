@@ -154,6 +154,9 @@ func (w *watcher) process(ev watch.Event) error {
 	msg := strings.Join(users, " ")
 	for _, channel := range w.channels {
 		ts := job.GetAnnotations()[msgTimestampKey+channel]
+		if ts == "" && job.Status.Failed < w.notifier.Spec.MinFails {
+			continue
+		}
 		newTS, unlock, err := notifier.Send(channel, ts, msg, ev.Type, job, pods.Items)
 		if unlock != nil {
 			defer unlock()

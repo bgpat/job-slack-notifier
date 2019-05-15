@@ -36,7 +36,7 @@ type JobNotifierSpec struct {
 
 	// Specifies the minimum failed count threshold.
 	// If it is less then job failed count, skip to notify.
-	MinFails int `json:"min_fails,omitempty"`
+	MinFails int32 `json:"min_fails,omitempty"`
 }
 
 // JobNotifierStatus defines the observed state of JobNotifier
