@@ -100,7 +100,7 @@ type ReconcileJobNotifier struct {
 // Automatically generate RBAC rules to allow the Controller to read and write Deployments
 // +kubebuilder:rbac:groups=,resources=pods,verbs=get;list;watch
 // +kubebuilder:rbac:groups=,resources=pods/status,verbs=get
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;update
 // +kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get
 // +kubebuilder:rbac:groups=jsn.k8s.bgpat.net,resources=jobnotifiers,verbs=get;list;watch
 // +kubebuilder:rbac:groups=jsn.k8s.bgpat.net,resources=jobnotifiers/status,verbs=get;update;patch
