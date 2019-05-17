@@ -14,6 +14,7 @@ import (
 
 var (
 	client *slack.Client
+	option Option
 
 	cache   = map[types.UID]map[string]string{}
 	cacheMu = sync.Map{}
@@ -29,9 +30,16 @@ var (
 	}
 )
 
-// SetToken set the slack API token.
-func SetToken(token string) {
-	client = slack.New(token)
+// Option is the struct to configure the notifier.
+type Option struct {
+	Token    string
+	Username string
+}
+
+// SetOption set options
+func SetOption(opt Option) {
+	client = slack.New(opt.Token)
+	option = opt
 }
 
 // Send sends a message to the specified channel.
@@ -139,8 +147,9 @@ func Send(channel, ts, customMsg string, event watch.EventType, job *batchv1.Job
 		}
 	}
 	options := []slack.MsgOption{
-		slack.MsgOptionUsername(fmt.Sprintf("%s/%s", job.Namespace, job.Name)),
+		slack.MsgOptionUsername(option.Username),
 		slack.MsgOptionText(strings.Join([]string{
+			fmt.Sprintf("*%s/%s*", job.Namespace, job.Name),
 			fmt.Sprintf(
 				":arrow_right: *active* %d\t\t:white_check_mark: *succeeded* %d\t\t:x: *failed* %d%s",
 				job.Status.Active,
