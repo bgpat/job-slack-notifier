@@ -34,23 +34,24 @@ import (
 func main() {
 	var (
 		metricsAddr string
-		slackToken  string
+		option      notifier.Option
 	)
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&slackToken, "slack-token", "", "The API token for slack bot.")
+	flag.StringVar(&option.Token, "slack-token", "", "The API token for slack bot.")
+	flag.StringVar(&option.Username, "username", "job-slack-notifier", "The user name for the notification message.")
 	flag.Parse()
 
 	logf.SetLogger(logf.ZapLogger(false))
 	log := logf.Log.WithName("entrypoint")
 
-	if slackToken == "" {
-		slackToken = os.Getenv("SLACK_TOKEN")
+	if option.Token == "" {
+		option.Token = os.Getenv("SLACK_TOKEN")
 	}
-	if slackToken == "" {
+	if option.Token == "" {
 		log.Error(nil, "-slack-token must be set")
 		os.Exit(1)
 	}
-	notifier.SetToken(slackToken)
+	notifier.SetOption(option)
 
 	// Get a config to talk to the apiserver
 	log.Info("setting up client for manager")
