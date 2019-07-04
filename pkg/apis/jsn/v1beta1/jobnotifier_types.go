@@ -50,6 +50,7 @@ type JobNotifierStatus struct {
 
 // JobNotifier is the Schema for the jobnotifiers API
 // +k8s:openapi-gen=true
+// +kubebuilder:resource:shortName=jn
 type JobNotifier struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
