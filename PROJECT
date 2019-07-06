@@ -1,0 +1,3 @@
+version: "2"
+domain: k8s.bgpat.net
+repo: github.com/bgpat/job-slack-notifier
