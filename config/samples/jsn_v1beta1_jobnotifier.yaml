@@ -1,0 +1,7 @@
+apiVersion: jsn.k8s.bgpat.net/v1beta1
+kind: JobNotifier
+metadata:
+  name: jobnotifier-sample
+spec:
+  # Add fields here
+  foo: bar
