@@ -1,3 +1,7 @@
 version: "2"
 domain: k8s.bgpat.net
 repo: github.com/bgpat/job-slack-notifier
+resources:
+- group: jsn
+  version: v1beta1
+  kind: JobNotifier
