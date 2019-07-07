@@ -3,5 +3,12 @@ kind: JobNotifier
 metadata:
   name: jobnotifier-sample
 spec:
-  # Add fields here
-  foo: bar
+  selector:
+    matchLabels:
+      role: job
+  channels:
+  - random
+  mention_to:
+  - bgpat
+  - here
+min_fails: 1
