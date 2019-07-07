@@ -19,13 +19,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // JobNotifierSpec defines the desired state of JobNotifier
 type JobNotifierSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// A label query to watch job status changes.
+	Selector *metav1.LabelSelector `json:"selector,omitempty"`
+
+	// Specifies the channel list to send the notification.
+	Channels []string `json:"channels,omitempty"`
+
+	// Specifies the mentioned user for the notification.
+	MentionTo []string `json:"mention_to,omitempty"`
+
+	// Specifies the minimum failed count threshold.
+	// If it is less then job failed count, skip to notify.
+	MinFails int32 `json:"min_fails,omitempty"`
 }
 
 // JobNotifierStatus defines the observed state of JobNotifier
