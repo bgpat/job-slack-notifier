@@ -10,7 +10,9 @@ spec:
   names:
     kind: JobNotifier
     plural: jobnotifiers
-  scope: ""
+    shortNames:
+    - jn
+  scope: Namespaced
   validation:
     openAPIV3Schema:
       description: JobNotifier is the Schema for the jobnotifiers API

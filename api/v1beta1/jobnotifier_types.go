@@ -35,6 +35,7 @@ type JobNotifierStatus struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:path=jobnotifiers,shortName=jn
 
 // JobNotifier is the Schema for the jobnotifiers API
 type JobNotifier struct {
