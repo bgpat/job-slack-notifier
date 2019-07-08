@@ -21,6 +21,7 @@ import (
 
 	jsnv1beta1 "github.com/bgpat/job-slack-notifier/api/v1beta1"
 	"github.com/bgpat/job-slack-notifier/controllers"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -38,6 +39,7 @@ func init() {
 
 	jsnv1beta1.AddToScheme(scheme)
 	corev1.AddToScheme(scheme)
+	batchv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -75,6 +77,14 @@ func main() {
 	}).SetupWithManager(mgr)
 	if err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Pod")
+		os.Exit(1)
+	}
+	err = (&controllers.JobReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Job"),
+	}).SetupWithManager(mgr)
+	if err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Job")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
