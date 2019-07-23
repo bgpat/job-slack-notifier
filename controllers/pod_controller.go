@@ -16,8 +16,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
-
 	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,11 +33,6 @@ type PodReconciler struct {
 // +kubebuilder:rbac:groups=core,resources=pods/status,verbs=get;update;patch
 
 func (r *PodReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("pod", req.NamespacedName)
-
-	// your logic here
-
 	return ctrl.Result{}, nil
 }
 

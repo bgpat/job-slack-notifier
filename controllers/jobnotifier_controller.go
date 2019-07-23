@@ -16,8 +16,6 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
-
 	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,11 +33,6 @@ type JobNotifierReconciler struct {
 // +kubebuilder:rbac:groups=jsn.k8s.bgpat.net,resources=jobnotifiers/status,verbs=get;update;patch
 
 func (r *JobNotifierReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("jobnotifier", req.NamespacedName)
-
-	// your logic here
-
 	return ctrl.Result{}, nil
 }
 

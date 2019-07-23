@@ -21,6 +21,7 @@ import (
 
 	jsnv1beta1 "github.com/bgpat/job-slack-notifier/api/v1beta1"
 	"github.com/bgpat/job-slack-notifier/controllers"
+	"github.com/bgpat/job-slack-notifier/notifier"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -48,9 +49,13 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
+	var slackToken string
+	var slackUsername string
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+	flag.StringVar(&slackToken, "slack-token", "", "The API token for slack bot.")
+	flag.StringVar(&slackUsername, "slack-username", "job-slack-notifier", "The user name for the notification message.")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.Logger(true))
@@ -65,38 +70,55 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = (&controllers.JobNotifierReconciler{
+	jobNotifierReconciler := &controllers.JobNotifierReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("JobNotifier"),
-	}).SetupWithManager(mgr)
+	}
+	err = jobNotifierReconciler.SetupWithManager(mgr)
 	if err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "JobNotifier")
 		os.Exit(1)
 	}
-	err = (&controllers.PodReconciler{
+
+	podReconciler := &controllers.PodReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Pod"),
-	}).SetupWithManager(mgr)
+	}
+	err = podReconciler.SetupWithManager(mgr)
 	if err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Pod")
 		os.Exit(1)
 	}
-	err = (&controllers.JobReconciler{
+
+	jobReconciler := &controllers.JobReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Job"),
-	}).SetupWithManager(mgr)
+	}
+	err = jobReconciler.SetupWithManager(mgr)
 	if err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Job")
 		os.Exit(1)
 	}
-	err = (&controllers.CronJobReconciler{
+
+	cronJobReconciler := &controllers.CronJobReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("CronJob"),
-	}).SetupWithManager(mgr)
+	}
+	err = cronJobReconciler.SetupWithManager(mgr)
 	if err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CronJob")
 		os.Exit(1)
 	}
+
+	notifier.DefaultNotifier = notifier.NewNotifier(
+		jobNotifierReconciler,
+		podReconciler,
+		jobReconciler,
+		cronJobReconciler,
+		slackToken,
+		slackUsername,
+	)
+
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")

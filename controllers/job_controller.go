@@ -16,8 +16,7 @@ limitations under the License.
 package controllers
 
 import (
-	"context"
-
+	"github.com/bgpat/job-slack-notifier/notifier"
 	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,11 +34,7 @@ type JobReconciler struct {
 // +kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get;update;patch
 
 func (r *JobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("job", req.NamespacedName)
-
-	// your logic here
-
+	go notifier.NotifyJob(req.NamespacedName)
 	return ctrl.Result{}, nil
 }
 
