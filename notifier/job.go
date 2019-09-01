@@ -2,6 +2,7 @@ package notifier
 
 import (
 	"context"
+	"sort"
 
 	jsnv1beta1 "github.com/bgpat/job-slack-notifier/api/v1beta1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -56,7 +57,9 @@ func (n *Notifier) notifyJob(req client.ObjectKey) {
 	for _, pod := range pods {
 		podNames = append(podNames, pod.Name)
 	}
-	logger.Info("found children pods", "pods", podNames)
+	if len(pods) > 0 {
+		logger.Info("found children pods", "pods", podNames)
+	}
 
 	jns, err := n.searchNotifiers(job)
 	if err != nil {
@@ -82,6 +85,8 @@ func (n *Notifier) notifyJob(req client.ObjectKey) {
 			}
 			if pods != nil {
 				notification.pods = pods
+			}
+			if notification.job.Status.Failed < jn.Spec.MinFails {
 			}
 			go func() {
 				err = notification.updateMessage()
@@ -127,12 +132,15 @@ func (n *Notifier) childrenPods(job batchv1.Job) ([]corev1.Pod, error) {
 		if owner == nil {
 			continue
 		}
-		if owner.APIVersion != corev1.SchemeGroupVersion.String() || owner.Kind != "Job" {
+		if owner.APIVersion != batchv1.SchemeGroupVersion.String() || owner.Kind != "Job" {
 			continue
 		}
 		if owner.Name == job.Name {
 			pods = append(pods, pod)
 		}
 	}
+	sort.Slice(pods, func(i, j int) bool {
+		return pods[i].CreationTimestamp.Before(&pods[j].CreationTimestamp)
+	})
 	return pods, nil
 }
