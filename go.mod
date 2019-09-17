@@ -7,8 +7,6 @@ require (
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/gorilla/websocket v1.4.0 // indirect
 	github.com/json-iterator/go v1.1.6 // indirect
-	github.com/k0kubun/pp v3.0.1+incompatible
-	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/nlopes/slack v0.5.1-0.20190623232825-2891986e2a3e
 	github.com/onsi/ginkgo v1.8.0
