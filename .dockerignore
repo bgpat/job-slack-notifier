@@ -1,0 +1,8 @@
+.git
+.gitignore
+Dockerfile
+Makefile
+PROJECT
+bin
+config
+hack
