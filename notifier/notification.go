@@ -89,8 +89,18 @@ func (n *Notification) updateMessage() error {
 	if n.deleted {
 		statuses = append(statuses, ":boom: *deleted*")
 	}
+	title := fmt.Sprintf("*%s/%s*", n.job.Namespace, n.job.Name)
+	var ct []string
+	for _, cond := range n.job.Status.Conditions {
+		if cond.Status == corev1.ConditionTrue {
+			ct = append(ct, string(cond.Type))
+		}
+	}
+	if len(ct) > 0 {
+		title += fmt.Sprintf("\t(%s)", strings.Join(ct, ", "))
+	}
 	body := []string{
-		fmt.Sprintf("*%s/%s*", n.job.Namespace, n.job.Name),
+		title,
 		fmt.Sprintf(
 			strings.Join(statuses, "\t\t"),
 			n.job.Status.Active,
@@ -106,6 +116,11 @@ func (n *Notification) updateMessage() error {
 	}
 	if n.job.Status.CompletionTime != nil {
 		body = append(body, ":clock5: *completion time*\t"+n.job.Status.CompletionTime.String())
+	}
+	for _, cond := range n.job.Status.Conditions {
+		if cond.Reason != "" || cond.Message != "" {
+			body = append(body, fmt.Sprintf(":memo: *%s*\t%s", cond.Reason, cond.Message))
+		}
 	}
 	if n.cronJob.Name != "" {
 		body = append(body, fmt.Sprintf(":calendar: *schedule* (%s/%s)\t`%s`", n.cronJob.Namespace, n.cronJob.Name, n.cronJob.Spec.Schedule))
