@@ -10,6 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -71,6 +72,18 @@ func (n *Notifier) notifyJob(req client.ObjectKey) {
 			Namespace: jn.Namespace,
 			Name:      jn.Name,
 		})
+		var backoffLimit int
+		if job.Spec.BackoffLimit != nil {
+			backoffLimit = int(*job.Spec.BackoffLimit)
+		}
+		var minFails int
+		if jn.Spec.MinFails != nil {
+			minFails, err = intstr.GetValueFromIntOrPercent(jn.Spec.MinFails, backoffLimit, false)
+		}
+		if err != nil {
+			logger.Error(err, "failed to parse minFails", "value", jn.Spec.MinFails)
+			continue
+		}
 		for _, name := range jn.Spec.Channels {
 			ch, err := n.channelID(name)
 			if err != nil {
@@ -86,7 +99,8 @@ func (n *Notifier) notifyJob(req client.ObjectKey) {
 			if pods != nil {
 				notification.pods = pods
 			}
-			if notification.job.Status.Failed < jn.Spec.MinFails {
+			if int(notification.job.Status.Failed) < minFails {
+				logger.Info("skip to notify", "fail_count", notification.job.Status.Failed, "min_fails", minFails)
 			}
 			go func() {
 				err = notification.updateMessage()

@@ -8,7 +8,7 @@ spec:
       role: job
   channels:
   - random
-  mention_to:
+  mentionTo:
   - bgpat
   - here
-  min_fails: 1
+  minFails: 50%
