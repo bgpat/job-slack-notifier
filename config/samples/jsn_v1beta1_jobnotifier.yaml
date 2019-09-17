@@ -11,4 +11,4 @@ spec:
   mention_to:
   - bgpat
   - here
-min_fails: 1
+  min_fails: 1
