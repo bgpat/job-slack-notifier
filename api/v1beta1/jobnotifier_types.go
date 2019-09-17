@@ -17,6 +17,7 @@ package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // JobNotifierSpec defines the desired state of JobNotifier
@@ -28,11 +29,11 @@ type JobNotifierSpec struct {
 	Channels []string `json:"channels,omitempty"`
 
 	// Specifies the mentioned user for the notification.
-	MentionTo []string `json:"mention_to,omitempty"`
+	MentionTo []string `json:"mentionTo,omitempty"`
 
 	// Specifies the minimum failed count threshold.
 	// If it is less then job failed count, skip to notify.
-	MinFails int32 `json:"min_fails,omitempty"`
+	MinFails *intstr.IntOrString `json:"minFails,omitempty"`
 }
 
 // JobNotifierStatus defines the observed state of JobNotifier
