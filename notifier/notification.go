@@ -98,7 +98,7 @@ func (n *Notification) updateMessage() error {
 			n.job.Status.Succeeded,
 			*n.job.Spec.Completions,
 			n.job.Status.Failed,
-			*n.job.Spec.BackoffLimit+1,
+			*n.job.Spec.BackoffLimit,
 		),
 	}
 	if n.job.Status.StartTime != nil {
