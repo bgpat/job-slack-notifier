@@ -40,7 +40,7 @@ func (r *PodReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	var pod corev1.Pod
 	if err := r.Get(ctx, req.NamespacedName, &pod); err != nil {
-		r.Log.Error(err, "not found pod", "pod", req.NamespacedName)
+		r.Log.Info("not found pod", "pod", req.NamespacedName, "error", err)
 		return ctrl.Result{}, nil
 	}
 	if owner := metav1.GetControllerOf(&pod); owner != nil {
