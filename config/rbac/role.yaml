@@ -14,18 +14,6 @@ rules:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - batch
-  resources:
-  - cronjobs/status
-  verbs:
-  - get
-  - update
-  - patch
 - apiGroups:
   - batch
   resources:
@@ -34,10 +22,6 @@ rules:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
 - apiGroups:
   - batch
   resources:
@@ -54,18 +38,6 @@ rules:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - jsn.k8s.bgpat.net
-  resources:
-  - jobnotifiers/status
-  verbs:
-  - get
-  - update
-  - patch
 - apiGroups:
   - ""
   resources:
@@ -74,15 +46,3 @@ rules:
   - get
   - list
   - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - pods/status
-  verbs:
-  - get
-  - update
-  - patch
