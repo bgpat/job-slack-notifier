@@ -30,7 +30,7 @@ type JobReconciler struct {
 	Log logr.Logger
 }
 
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch
 // +kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get;update;patch
 
 func (r *JobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
