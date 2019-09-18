@@ -101,6 +101,7 @@ func (n *Notifier) notifyJob(req client.ObjectKey) {
 			}
 			if int(notification.job.Status.Failed) < minFails {
 				logger.Info("skip to notify", "fail_count", notification.job.Status.Failed, "min_fails", minFails)
+				continue
 			}
 			go func() {
 				err = notification.updateMessage()
