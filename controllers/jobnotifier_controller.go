@@ -29,8 +29,7 @@ type JobNotifierReconciler struct {
 	Log logr.Logger
 }
 
-// +kubebuilder:rbac:groups=jsn.k8s.bgpat.net,resources=jobnotifiers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=jsn.k8s.bgpat.net,resources=jobnotifiers/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=jsn.k8s.bgpat.net,resources=jobnotifiers,verbs=get;list;watch
 
 func (r *JobNotifierReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
